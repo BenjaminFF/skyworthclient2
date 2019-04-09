@@ -198,7 +198,6 @@
               }
             }).then((res) => {
               let mResources = [];
-              console.log(res.data);
               res.data.forEach((resource) => {
                 resource.selected = false;
                 mResources.push(resource);
@@ -282,7 +281,7 @@
         resource.selected = true;
         this.selectedResource = resource;
         this.setCurResource(this.selectedResource);
-        this.setCurUri(this.selectedResource.Uri);
+        this.setCurUri(this.selectedResource.UriLowRes);
         this.setSelected(true);
       },
 

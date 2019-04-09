@@ -38,7 +38,7 @@
     <div v-if="showVideo" class="app-video">
       <video id="my-video" class="video-js vjs-big-play-centered" preload="undefined" :loop="loopPlay"
              crossorigin="anonymous" autoplay :controls="isLocalPlay" webkit-playsinline="true" playsinline="true">
-        <source :src="isLocalPlay==true?curUri:curNetPlayResource.Uri" type="video/mp4"/>
+        <source :src="isLocalPlay==true?curUri:curNetPlayResource.UriLowRes" type="video/mp4"/>
       </video>
       <div class="app-video__header-container" @click="showVideoHeader">
         <transition enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
