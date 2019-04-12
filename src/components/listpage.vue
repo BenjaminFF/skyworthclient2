@@ -49,17 +49,16 @@
     },
     methods: {
       turnoffAll() {
-        this.wsAdmin.send(JSON.stringify({
+        this.wsAdmin.send(JSON.stringify({Type:1,AdminEvent:{
           Control: 10,      //10表示关机
           Resource: null
-        }));
-        console.log('turnoffall')
+        }}));
       },
       rebootAll() {
-        this.wsAdmin.send(JSON.stringify({
+        this.wsAdmin.send(JSON.stringify({Type:1,AdminEvent:{
           Control: 20,      //10表示关机
           Resource: null
-        }));
+        }}));
       }
     },
     computed: {

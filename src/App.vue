@@ -238,11 +238,14 @@
             //this.heartCheck.start();
           }
           this.wsAdmin.onmessage = (evt) => {
-            let UserEvents = JSON.parse(evt.data).UserEvents;
-            console.log(UserEvents);
-            this.updateUserEvents(UserEvents);
-            this.setDeviceListByUserEvents(UserEvents);
-            this.flushDevicesStatus(UserEvents);
+            let message=JSON.parse(evt.data);
+            console.log(message.Data);
+            if(message.Type==3){
+              let UserEvents = message.Data.UserEvents;
+              this.updateUserEvents(UserEvents);
+              this.setDeviceListByUserEvents(UserEvents);
+              this.flushDevicesStatus(UserEvents);
+            }
             this.wsAdmin.send('OK');
             //this.heartCheck.reset();
           }
@@ -402,10 +405,10 @@
           this.curNetPlayResource = JSON.parse(JSON.stringify(this.curResource));
           this.curTime = 0;
           this.lastTimeStamp = new Date().getTime();
-          this.wsAdmin.send(JSON.stringify({
+          this.wsAdmin.send(JSON.stringify({Type:1,AdminEvent:{
             Control: 1,      //1表示播放
             Resource: this.curNetPlayResource
-          }));
+          }}));
         }
         this.isVideoPlaying = true;
         this.showVideo = true;
@@ -446,16 +449,16 @@
             this.curVideoInfo.Duration = this.getType(minutes) + ':' + this.getType(seconds);
           })
           player.on('pause', () => {
-            this.wsAdmin.send(JSON.stringify({
+            this.wsAdmin.send(JSON.stringify({Type:1,AdminEvent:{
               Control: 2,      //2表示暂停
               Resource: this.curNetPlayResource
-            }));
+            }}));
           });
           player.on('play', () => {
-            this.wsAdmin.send(JSON.stringify({
+            this.wsAdmin.send(JSON.stringify({Type:1,AdminEvent:{
               Control: 4,      //4表示Resume
               Resource: this.curNetPlayResource
-            }));
+            }}));
           });
           player.on("ended", () => {
             clearTimeout(this.inactivityTimeout);
@@ -475,10 +478,10 @@
         });
       },
       netPlayClose() {
-        this.wsAdmin.send(JSON.stringify({
+        this.wsAdmin.send(JSON.stringify({Type:1,AdminEvent:{
           Control: 3,      //3表示关闭视频
           Resource: this.curNetPlayResource
-        }));
+        }}));
         this.netPlayState = 0;
         this.showVideo = false;
         clearInterval(this.activityCheckInterval);
