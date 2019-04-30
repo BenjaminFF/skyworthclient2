@@ -2,7 +2,7 @@
   <el-row class="homepage">
     <el-col class="homepage-sidebar" :span="4">
       <div class="homepage-sidebar__header">
-        <img src="../assets/zhongkonglogo.svg" class="homepage-sidebar__icon">
+        <img src="../assets/yidonglogo.svg" style="width: 15rem">
       </div>
       <ef-list style="width: 100%;height: 100%;" :wrap-height="'80%'" :list="categories">
         <div v-for="category in categories" class="homepage-sidebar__category" :class="{'is-active':category.active}"

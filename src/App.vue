@@ -85,6 +85,9 @@
   import videojsvr from 'videojs-vr'
   import {mapState} from 'vuex'
   import screenfull from 'screenfull'
+  import * as THREE from 'three';
+
+  var qte = require('quaternion-to-euler');
 
   export default {
     name: 'App',
@@ -110,7 +113,9 @@
         isVideoPlaying: false,
         curVideoInfo: {},
         videoProgressTransition: true,
-        loopPlay: false
+        loopPlay: false,
+        angle: 0,
+        userQuaternionEvent: {}
       }
     },
     created() {
@@ -120,7 +125,7 @@
       });
       this.$nextTick(() => {
         let goFS = document.getElementById("app");
-        goFS.addEventListener("dblclick", ()=> {
+        goFS.addEventListener("dblclick", () => {
           this.toggleFullScreen();
         }, false);
       });
@@ -161,7 +166,7 @@
         this.fetchData();
       },
 
-      enterFullScreen(){
+      enterFullScreen() {
         let doc = window.document;
         let docEl = doc.documentElement;
 
@@ -227,10 +232,10 @@
       },
       async connectServerByWS() {
         try {
-          let url = "";
-          await this.axios.get('/static/config/servercfg.ini').then((res) => {
+          let url = window.location.host;
+          /*await this.axios.get('/static/config/servercfg.ini').then((res) => {
             url = res.data.Addr;
-          });
+          });*/
           let timeStamp = new Date().getTime();
           this.wsAdmin = new WebSocket("ws://" + url + "/ccweb/ws/join?sn=admin" + timeStamp);
           this.setwsAdmin(this.wsAdmin);
@@ -238,13 +243,27 @@
             //this.heartCheck.start();
           }
           this.wsAdmin.onmessage = (evt) => {
-            let message=JSON.parse(evt.data);
-            console.log(message.Data);
-            if(message.Type==3){
+            let message = JSON.parse(evt.data);
+            if (message.Type == 3) {
               let UserEvents = message.Data.UserEvents;
               this.updateUserEvents(UserEvents);
               this.setDeviceListByUserEvents(UserEvents);
               this.flushDevicesStatus(UserEvents);
+            }
+            if (message.Type == 6) {
+              this.userQuaternionEvent = message.Data;
+              if (this.showVideo) {
+                let player = videojs('my-video');
+                let quaternionLeftHand = new THREE.Quaternion(this.userQuaternionEvent.X, this.userQuaternionEvent.Y, this.userQuaternionEvent.Z, this.userQuaternionEvent.W);
+                let quaternionRightHand = new THREE.Quaternion(quaternionLeftHand.z, -quaternionLeftHand.w, quaternionLeftHand.x, quaternionLeftHand.y);
+                let rotation = new THREE.Euler().setFromQuaternion(quaternionRightHand, "ZXY");
+                if(player.vr().camera!=undefined){
+                  player.vr().camera.position.x = 2 * Math.sin(-rotation.y) * Math.cos(-rotation.x);
+                  player.vr().camera.position.y = 2 * Math.sin(-rotation.x);
+                  player.vr().camera.position.z = 2 * Math.cos(-rotation.y) * Math.cos(-rotation.x);
+                }
+              }
+              //console.log(this.userQuaternionEvent);
             }
             this.wsAdmin.send('OK');
             //this.heartCheck.reset();
@@ -405,10 +424,12 @@
           this.curNetPlayResource = JSON.parse(JSON.stringify(this.curResource));
           this.curTime = 0;
           this.lastTimeStamp = new Date().getTime();
-          this.wsAdmin.send(JSON.stringify({Type:1,AdminEvent:{
-            Control: 1,      //1表示播放
-            Resource: this.curNetPlayResource
-          }}));
+          this.wsAdmin.send(JSON.stringify({
+            Type: 1, Data: {
+              Control: 1,      //1表示播放
+              Resource: this.curNetPlayResource
+            }
+          }));
         }
         this.isVideoPlaying = true;
         this.showVideo = true;
@@ -440,6 +461,7 @@
             let seconds = parseInt(curTime % 60);
             this.curVideoInfo.CurTime = this.getType(minutes) + ':' + this.getType(seconds);
             this.curVideoInfo.CurWidth = player.currentTime() / player.duration();
+            //player.vr().camera.quaternion.normalize();
           });
           player.on('loadedmetadata', () => {
             //console.log(this.curTime);
@@ -449,16 +471,20 @@
             this.curVideoInfo.Duration = this.getType(minutes) + ':' + this.getType(seconds);
           })
           player.on('pause', () => {
-            this.wsAdmin.send(JSON.stringify({Type:1,AdminEvent:{
-              Control: 2,      //2表示暂停
-              Resource: this.curNetPlayResource
-            }}));
+            this.wsAdmin.send(JSON.stringify({
+              Type: 1, Data: {
+                Control: 2,      //2表示暂停
+                Resource: this.curNetPlayResource
+              }
+            }));
           });
           player.on('play', () => {
-            this.wsAdmin.send(JSON.stringify({Type:1,AdminEvent:{
-              Control: 4,      //4表示Resume
-              Resource: this.curNetPlayResource
-            }}));
+            this.wsAdmin.send(JSON.stringify({
+              Type: 1, Data: {
+                Control: 4,      //4表示Resume
+                Resource: this.curNetPlayResource
+              }
+            }));
           });
           player.on("ended", () => {
             clearTimeout(this.inactivityTimeout);
@@ -478,10 +504,12 @@
         });
       },
       netPlayClose() {
-        this.wsAdmin.send(JSON.stringify({Type:1,AdminEvent:{
-          Control: 3,      //3表示关闭视频
-          Resource: this.curNetPlayResource
-        }}));
+        this.wsAdmin.send(JSON.stringify({
+          Type: 1, Data: {
+            Control: 3,      //3表示关闭视频
+            Resource: this.curNetPlayResource
+          }
+        }));
         this.netPlayState = 0;
         this.showVideo = false;
         clearInterval(this.activityCheckInterval);
@@ -491,7 +519,7 @@
       getType(time) {
         return time < 10 ? "0" + time : time;
       },
-      showVideoHeader(){
+      showVideoHeader() {
         this.userActivity = true;
         this.videoHeaderVisible = true;
       },
@@ -525,9 +553,12 @@
             let seconds = parseInt(curTime % 60);
             this.curVideoInfo.CurTime = this.getType(minutes) + ':' + this.getType(seconds);
             this.curVideoInfo.CurWidth = player.currentTime() / player.duration();
-            console.log(this.curVideoInfo.CurWidth);
           });
-          player.on('play',()=>{
+          setInterval(() => {
+            let player = videojs('my-video');
+            console.log(player.vr().camera.position);
+          }, 3000);
+          player.on('play', () => {
             this.userActivity = true;
             this.activityCheck();
           });
