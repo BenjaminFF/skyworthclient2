@@ -20,6 +20,11 @@
           <el-col :span="7" :xs="11" style="display: flex;justify-content: center">
             <span style="color: #999999">{{device.SerialNumber}}</span>
           </el-col>
+          <el-col :span="1" :xs="1">
+            <el-button type="text" style="color: gray;font-size: 1rem" @click="toggleSameScreen(device)"
+                       :class="{'is-playScreen':device.playSameScreen}">同屏
+            </el-button>
+          </el-col>
         </el-row>
       </ef-list>
     </div>
@@ -37,33 +42,59 @@
 </template>
 
 <script>
-  import {mapState} from 'vuex'
+  import {mapState, mapMutations} from 'vuex'
   import EfList from "./common/ef-list/list";
   import icon from '../assets/lib/iconfont'
 
   export default {
     name: "listpage",
     data() {
-      return {
-      }
+      return {}
     },
     methods: {
       turnoffAll() {
-        this.wsAdmin.send(JSON.stringify({Type:1,AdminEvent:{
-          Control: 10,      //10表示关机
-          Resource: null
-        }}));
+        this.wsAdmin.send(JSON.stringify({
+          Type: 1, AdminEvent: {
+            Control: 10,      //10表示关机
+            Resource: null
+          }
+        }));
       },
       rebootAll() {
-        this.wsAdmin.send(JSON.stringify({Type:1,AdminEvent:{
-          Control: 20,      //10表示关机
-          Resource: null
-        }}));
-      }
+        this.wsAdmin.send(JSON.stringify({
+          Type: 1, AdminEvent: {
+            Control: 20,      //10表示关机
+            Resource: null
+          }
+        }));
+      },
+      toggleSameScreen(device) {
+        let formData = new FormData();
+        formData.set('sn', device.SerialNumber);
+        this.axios.post('/ccweb/api/setquaternionsyncdevice', formData).then((res) => {
+          if (res.data.Code == 0) {
+            this.deviceList.forEach((device) => {
+              device.playSameScreen = false;
+            });
+            device.playSameScreen = true;
+            this.updateDeviceList(this.deviceList);
+          }
+          if (res.data.Code == -1) {
+            this.$message({
+              message: '设备未连接！',
+              type: 'warning',
+              duration: 1500
+            });
+          }
+        });
+      },
+      ...mapMutations({
+        updateDeviceList: 'wsData/updateDeviceList'
+      }),
     },
     computed: {
       ...mapState({
-        deviceList:state=>state.wsData.deviceList,
+        deviceList: state => state.wsData.deviceList,
         wsAdmin: state => state.wsData.wsAdmin
       }),
     },
@@ -72,4 +103,7 @@
 </script>
 
 <style scoped>
+  .is-playScreen {
+    color: #3a8ee6 !important;
+  }
 </style>

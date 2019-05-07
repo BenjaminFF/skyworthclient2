@@ -209,7 +209,8 @@
               Id: device.Id,
               SerialNumber: device.SerialNumber,
               playerState: 0,
-              connectState: 0
+              connectState: 0,
+              playSameScreen: false
             });
           });
           this.updateDeviceList(deviceList);
@@ -257,7 +258,7 @@
                 let quaternionLeftHand = new THREE.Quaternion(this.userQuaternionEvent.X, this.userQuaternionEvent.Y, this.userQuaternionEvent.Z, this.userQuaternionEvent.W);
                 let quaternionRightHand = new THREE.Quaternion(quaternionLeftHand.z, -quaternionLeftHand.w, quaternionLeftHand.x, quaternionLeftHand.y);
                 let rotation = new THREE.Euler().setFromQuaternion(quaternionRightHand, "ZXY");
-                if(player.vr().camera!=undefined){
+                if (player.vr().camera != undefined) {
                   player.vr().camera.position.x = 2 * Math.sin(-rotation.y) * Math.cos(-rotation.x);
                   player.vr().camera.position.y = 2 * Math.sin(-rotation.x);
                   player.vr().camera.position.z = 2 * Math.cos(-rotation.y) * Math.cos(-rotation.x);
@@ -311,7 +312,7 @@
             signalIndex: signalIndex,
             playerState: playerState,
             powerState: powerState,
-            connectState: 1
+            connectState: 1,
           })
         });
         deviceList.forEach((device) => {
